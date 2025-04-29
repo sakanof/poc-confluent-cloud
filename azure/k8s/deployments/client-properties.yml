@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: client-properties-configmap-producer
+  namespace: confluent-cloud-azure
+data:
+  client_iam.properties: |
+    security.protocol=SASL_SSL
+    sasl.oauthbearer.token.endpoint.url=http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=${APPLICATION_CLIENT_ID}
+    sasl.login.callback.handler.class=io.confluent.oauth.azure.managedidentity.OAuthBearerLoginCallbackHandler
+    sasl.mechanism=OAUTHBEARER
+    sasl.jaas.config= \
+       org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required \
+           clientId='ignored' \
+           clientSecret='ignored' \
+           extension_logicalCluster='${CLUSTER_ID}' \
+           extension_identityPoolId='${PRODUCER_IDENTITY_POOL_ID}';
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: client-properties-configmap-consumer
+  namespace: confluent-cloud-azure
+data:
+  client_iam.properties: |
+    security.protocol=SASL_SSL
+    sasl.oauthbearer.token.endpoint.url=http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=${APPLICATION_CLIENT_ID}
+    sasl.login.callback.handler.class=io.confluent.oauth.azure.managedidentity.OAuthBearerLoginCallbackHandler
+    sasl.mechanism=OAUTHBEARER
+    sasl.jaas.config= \
+       org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required \
+           clientId='ignored' \
+           clientSecret='ignored' \
+           extension_logicalCluster='${CLUSTER_ID}' \
+           extension_identityPoolId='${CONSUMER_IDENTITY_POOL_ID}';
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: client-properties-configmap-topic-owner
+  namespace: confluent-cloud-azure
+data:
+  client_iam.properties: |
+    security.protocol=SASL_SSL
+    sasl.oauthbearer.token.endpoint.url=http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=${APPLICATION_CLIENT_ID}
+    sasl.login.callback.handler.class=io.confluent.oauth.azure.managedidentity.OAuthBearerLoginCallbackHandler
+    sasl.mechanism=OAUTHBEARER
+    sasl.jaas.config= \
+       org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required \
+           clientId='ignored' \
+           clientSecret='ignored' \
+           extension_logicalCluster='${CLUSTER_ID}' \
+           extension_identityPoolId='${TOPIC_OWNER_IDENTITY_POOL_ID}';

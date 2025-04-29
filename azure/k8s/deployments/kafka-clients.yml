@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafka-producer
+  namespace: ${APPLICATION_NAMESPACE}
+  labels:
+    azure.workload.identity/use: "true"
+spec:
+  serviceAccountName: ${SERVICE_ACCOUNT_WRITE}
+  containers:
+  - name: kafka-client
+    image: apache/kafka:latest
+    imagePullPolicy: IfNotPresent
+    command:
+      - /bin/bash
+      - -c
+      - |
+        echo 'alias producer="/opt/kafka/bin/kafka-console-producer.sh --topic test --bootstrap-server $BOOTSTRAP_SERVER --producer.config /opt/kafka/config/client_iam.properties"' >> ~/.bashrc && \
+        sleep 3600
+    env:
+      - name: BOOTSTRAP_SERVER
+        value: "${BOOTSTRAP_SERVER}"
+      - name: KAFKA_OPTS
+        value: "-Dorg.apache.kafka.sasl.oauthbearer.allowed.urls=http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=${APPLICATION_CLIENT_ID}"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "256Mi"
+        cpu: "250m"
+    volumeMounts:
+      - name: client-properties-volume
+        mountPath: /opt/kafka/config/client_iam.properties
+        subPath: client_iam.properties
+  volumes:
+    - name: client-properties-volume
+      configMap:
+        name: client-properties-configmap-producer
+  restartPolicy: Always
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafka-consumer
+  namespace: ${APPLICATION_NAMESPACE}
+  labels:
+    azure.workload.identity/use: "true"
+spec:
+  serviceAccountName: ${SERVICE_ACCOUNT_READ}
+  containers:
+  - name: kafka-client
+    image: apache/kafka:latest
+    imagePullPolicy: IfNotPresent
+    command:
+      - /bin/bash
+      - -c
+      - |
+        echo 'alias consumer="/opt/kafka/bin/kafka-console-consumer.sh --topic test --group test-group --bootstrap-server $BOOTSTRAP_SERVER --consumer.config /opt/kafka/config/client_iam.properties"' >> ~/.bashrc && \
+        echo 'alias create_topic="/opt/kafka/bin/kafka-topics.sh --bootstrap-server $BOOTSTRAP_SERVER --command-config /opt/kafka/config/client_iam.properties --create --topic test --partitions 3 --replication-factor 3"' >> ~/.bashrc && \
+        echo "log4j.rootLogger=DEBUG, stderr" > /tmp/log4j.properties && \
+        echo "log4j.appender.stderr=org.apache.log4j.ConsoleAppender" >> /tmp/log4j.properties && \
+        echo "log4j.appender.stderr.layout=org.apache.log4j.PatternLayout" >> /tmp/log4j.properties && \
+        echo "log4j.appender.stderr.layout.ConversionPattern=[%d] %p %m (%c)%n" >> /tmp/log4j.properties && \
+        sleep 3600
+    env:
+      - name: BOOTSTRAP_SERVER
+        value: "${BOOTSTRAP_SERVER}"
+      - name: KAFKA_OPTS
+        value: "-Dorg.apache.kafka.sasl.oauthbearer.allowed.urls=http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=${APPLICATION_CLIENT_ID}"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "256Mi"
+        cpu: "250m"
+    volumeMounts:
+      - name: client-properties-volume
+        mountPath: /opt/kafka/config/client_iam.properties
+        subPath: client_iam.properties
+  volumes:
+    - name: client-properties-volume
+      configMap:
+        name: client-properties-configmap-consumer
+  restartPolicy: Always
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafka-topic-owner
+  namespace: ${APPLICATION_NAMESPACE}
+  labels:
+    azure.workload.identity/use: "true"
+spec:
+  serviceAccountName: ${SERVICE_ACCOUNT_TOPIC_OWNER}
+  containers:
+  - name: kafka-client
+    image: apache/kafka:latest
+    imagePullPolicy: IfNotPresent
+    command:
+      - /bin/bash
+      - -c
+      - |
+        echo 'alias create_topic="/opt/kafka/bin/kafka-topics.sh --bootstrap-server $BOOTSTRAP_SERVER --command-config /opt/kafka/config/client_iam.properties --create --topic test --partitions 3 --replication-factor 3"' >> ~/.bashrc && \
+        sleep 3600
+    env:
+      - name: BOOTSTRAP_SERVER
+        value: "${BOOTSTRAP_SERVER}"
+      - name: KAFKA_OPTS
+        value: "-Dorg.apache.kafka.sasl.oauthbearer.allowed.urls=http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=${APPLICATION_CLIENT_ID}"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "256Mi"
+        cpu: "250m"
+    volumeMounts:
+      - name: client-properties-volume
+        mountPath: /opt/kafka/config/client_iam.properties
+        subPath: client_iam.properties
+  volumes:
+    - name: client-properties-volume
+      configMap:
+        name: client-properties-configmap-topic-owner
+  restartPolicy: Always
